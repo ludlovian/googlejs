@@ -1,0 +1,33 @@
+{
+  "name": "googlejs",
+  "version": "0.0.1",
+  "description": "My API to google stuff",
+  "main": "src/index.mjs",
+  "module": "src/index.mjs",
+  "source": "src",
+  "type": "module",
+  "exports2": {
+    ".": "./src/index.mjs",
+    "drive": "./src/drive.mjs",
+    "sheets": "./src/sheets.mjs"
+  },
+  "scripts": {
+    "format": "prettier-standard src/*.mjs",
+    "lint": "standard src/*.mjs | snazzy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ludlovian/googlejs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ludlovian/googlejs/issues"
+  },
+  "homepage": "https://github.com/ludlovian/googlejs#readme",
+  "dependencies": {
+    "@googleapis/drive": "^0.3.0",
+    "@googleapis/sheets": "^0.3.0"
+  }
+}
