@@ -6,10 +6,10 @@
   "module": "src/index.mjs",
   "source": "src",
   "type": "module",
-  "exports2": {
+  "exports": {
     ".": "./src/index.mjs",
-    "drive": "./src/drive.mjs",
-    "sheets": "./src/sheets.mjs"
+    "./drive": "./src/drive.mjs",
+    "./sheets": "./src/sheets.mjs"
   },
   "scripts": {
     "format": "prettier-standard src/*.mjs",
