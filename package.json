@@ -9,7 +9,8 @@
   "exports": {
     ".": "./src/index.mjs",
     "./drive": "./src/drive.mjs",
-    "./sheets": "./src/sheets.mjs"
+    "./sheets": "./src/sheets.mjs",
+    "./datastore": "./src/datastore.mjs"
   },
   "scripts": {
     "format": "prettier-standard src/*.mjs",
