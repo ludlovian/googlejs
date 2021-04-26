@@ -11,7 +11,7 @@ export class Table {
     const datastore = await getDatastoreAPI()
     const query = datastore.createQuery(this.kind)
     for await (const entity of query.runStream()) {
-      yield new Entity(entity)
+      yield entity
     }
   }
 
@@ -42,15 +42,8 @@ export class Table {
   }
 }
 
-class Entity {
-  constructor (entity) {
-    Object.assign(this, entity)
-  }
-
-  get key () {
-    const k = this[KEY]
-    return !k ? undefined : 'name' in k ? { name: k.name } : { id: k.id }
-  }
+export function getEntityKey (entity) {
+  return entity[KEY]
 }
 
 const getDatastoreAPI = once(async function getDatastoreAPI ({
