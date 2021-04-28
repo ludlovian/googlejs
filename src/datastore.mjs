@@ -5,7 +5,7 @@ export class Table {
     this.kind = kind
   }
 
-  async * fetch ({ where, order, ...rest } = {}) {
+  async * fetch ({ where, order, factory, ...rest } = {}) {
     const datastore = await getDatastoreAPI(rest)
     let query = datastore.createQuery(this.kind)
     if (where && typeof where === 'object') {
@@ -19,8 +19,9 @@ export class Table {
         query = query.order(...arrify(args))
       }
     }
+    const Factory = factory || Row
     for await (const entity of query.runStream()) {
-      yield new Row(entity, datastore)
+      yield new Factory(entity, datastore)
     }
   }
 
@@ -59,7 +60,7 @@ export class Table {
 
 const KEY = Symbol('rowKey')
 
-class Row {
+export class Row {
   constructor (entity, datastore) {
     const _key = entity[datastore.KEY]
     for (const k of Object.keys(entity).sort()) {
