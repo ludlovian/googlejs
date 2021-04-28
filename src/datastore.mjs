@@ -1,21 +1,30 @@
-import { once } from './util.mjs'
-
-let KEY
+import { once, arrify } from './util.mjs'
 
 export class Table {
   constructor (kind) {
     this.kind = kind
   }
 
-  async * fetch () {
-    const datastore = await getDatastoreAPI()
-    const query = datastore.createQuery(this.kind)
+  async * fetch ({ where, order, ...rest } = {}) {
+    const datastore = await getDatastoreAPI(rest)
+    let query = datastore.createQuery(this.kind)
+    if (where && typeof where === 'object') {
+      if (!Array.isArray(where)) where = Object.entries(where)
+      for (const args of where) {
+        query = query.filter(...args)
+      }
+    }
+    if (Array.isArray(order)) {
+      for (const args of order) {
+        query = query.order(...arrify(args))
+      }
+    }
     for await (const entity of query.runStream()) {
-      yield entity
+      yield new Row(entity, datastore)
     }
   }
 
-  async fetchAll (options) {
+  async select (options) {
     const entities = []
     for await (const entity of this.fetch(options)) {
       entities.push(entity)
@@ -23,27 +32,45 @@ export class Table {
     return entities
   }
 
-  async insert (entities) {
+  async insert (rows) {
     const datastore = await getDatastoreAPI()
-    entities = verifyEntities(entities, { kind: this.kind, datastore })
+    const entities = makeEntities(rows, { kind: this.kind, datastore })
     await datastore.insert(entities)
   }
 
-  async upsert (entities) {
+  async update (rows) {
     const datastore = await getDatastoreAPI()
-    entities = verifyEntities(entities, { kind: this.kind, datastore })
+    const entities = makeEntities(rows, { kind: this.kind, datastore })
+    await datastore.update(entities)
+  }
+
+  async upsert (rows) {
+    const datastore = await getDatastoreAPI()
+    const entities = makeEntities(rows, { kind: this.kind, datastore })
     await datastore.upsert(entities)
   }
 
-  async delete (entities) {
+  async delete (rows) {
     const datastore = await getDatastoreAPI()
-    entities = verifyEntities(entities, { kind: this.kind, datastore })
-    await datastore.delete(entities.map(e => e[datastore.KEY]))
+    const keys = extractKeys(rows)
+    await datastore.delete(keys)
   }
 }
 
-export function getEntityKey (entity) {
-  return entity[KEY]
+const KEY = Symbol('rowKey')
+
+class Row {
+  constructor (entity, datastore) {
+    const _key = entity[datastore.KEY]
+    for (const k of Object.keys(entity).sort()) {
+      this[k] = entity[k]
+    }
+    Object.defineProperty(this, KEY, { value: _key, configurable: true })
+  }
+
+  get _key () {
+    return this[KEY]
+  }
 }
 
 const getDatastoreAPI = once(async function getDatastoreAPI ({
@@ -55,21 +82,21 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
   }
 
   const datastore = new Datastore()
-  KEY = datastore.KEY
   return datastore
 })
 
-function verifyEntities (arr, { kind, datastore }) {
-  if (!Array.isArray(arr)) arr = [arr]
-  for (const entity of arr) {
-    if (!(datastore.KEY in entity)) {
-      if ('id' in entity) {
-        entity[datastore.KEY] = datastore.key([kind, entity.id])
-        delete entity.id
-      } else {
-        entity[datastore.KEY] = datastore.key([kind])
-      }
+function makeEntities (arr, { kind, datastore }) {
+  return arrify(arr).map(row => {
+    if (row instanceof Row) return { key: row._key, data: { ...row } }
+    return {
+      key: row._id ? datastore.key([kind, row._id]) : datastore.key([kind]),
+      data: { ...row }
     }
-  }
-  return arr
+  })
+}
+
+function extractKeys (arr) {
+  return arrify(arr)
+    .filter(row => row instanceof Row)
+    .map(row => row._key)
 }

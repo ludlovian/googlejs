@@ -13,6 +13,10 @@ export function once (fn) {
   return f
 }
 
+export function arrify (arr) {
+  return Array.isArray(arr) ? arr : [arr]
+}
+
 export function jsDateToSerialDate (dt) {
   const ms = dt.getTime()
   const localMs = ms - dt.getTimezoneOffset() * 60 * 1000
