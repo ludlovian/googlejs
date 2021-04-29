@@ -6,6 +6,9 @@ export class Table {
   }
 
   async * fetch ({ where, order, factory, ...rest } = {}) {
+    if (factory && !(factory.prototype instanceof Row)) {
+      throw new Error('Factory for new rows must subclass Row')
+    }
     const datastore = await getDatastoreAPI(rest)
     let query = datastore.createQuery(this.kind)
     if (where && typeof where === 'object') {
