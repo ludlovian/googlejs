@@ -1,4 +1,4 @@
-import { once } from './util.mjs'
+import once from 'pixutil/once'
 
 const SCOPES = {
   rw: ['https://www.googleapis.com/auth/drive'],

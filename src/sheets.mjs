@@ -1,4 +1,6 @@
-import { once, jsDateToSerialDate } from './util.mjs'
+import once from 'pixutil/once'
+
+import { jsDateToSerialDate } from './util.mjs'
 
 const SCOPES = {
   rw: ['https://www.googleapis.com/auth/spreadsheets'],
