@@ -30,6 +30,7 @@
   "dependencies": {
     "@google-cloud/datastore": "^6.3.1",
     "@googleapis/drive": "^0.3.0",
-    "@googleapis/sheets": "^0.3.0"
+    "@googleapis/sheets": "^0.3.0",
+    "pixutil": "github:ludlovian/pixutil#semver:^1.0.0"
   }
 }

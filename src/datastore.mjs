@@ -1,4 +1,5 @@
-import { once, arrify } from './util.mjs'
+import once from 'pixutil/once'
+import arrify from 'pixutil/arrify'
 
 export class Table {
   constructor (kind) {
