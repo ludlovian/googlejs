@@ -4,7 +4,7 @@ import clone from 'pixutil/clone'
 import equal from 'pixutil/equal'
 import log from 'logjs'
 
-const debug = log.prefix('googlejs:datastore').colour().level(5)
+const debug = log.prefix('googlejs:datastore:').colour().level(5)
 
 export class Table {
   constructor (kind) {
@@ -116,7 +116,7 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
 function * getEntities (arr, { kind, datastore, group = 400 }) {
   let batch = []
   for (const row of arrify(arr)) {
-    if (row instanceof Row && !row._changed) continue
+    if (row instanceof Row && !row._changed()) continue
     batch.push({
       key: row instanceof Row ? row._key : datastore.key([kind]),
       data: clone(row)
