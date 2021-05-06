@@ -1,5 +1,7 @@
 import once from 'pixutil/once'
 import arrify from 'pixutil/arrify'
+import clone from 'pixutil/clone'
+import equal from 'pixutil/equal'
 
 export class Table {
   constructor (kind) {
@@ -40,41 +42,52 @@ export class Table {
   async insert (rows) {
     const datastore = await getDatastoreAPI()
     const entities = makeEntities(rows, { kind: this.kind, datastore })
+    if (!entities.length) return
     await datastore.insert(entities)
   }
 
   async update (rows) {
     const datastore = await getDatastoreAPI()
     const entities = makeEntities(rows, { kind: this.kind, datastore })
+    if (!entities.length) return
+    console.log(entities)
     await datastore.update(entities)
   }
 
   async upsert (rows) {
     const datastore = await getDatastoreAPI()
     const entities = makeEntities(rows, { kind: this.kind, datastore })
+    if (!entities.length) return
     await datastore.upsert(entities)
   }
 
   async delete (rows) {
     const datastore = await getDatastoreAPI()
     const keys = extractKeys(rows)
+    if (!keys.length) return
     await datastore.delete(keys)
   }
 }
 
 const KEY = Symbol('rowKey')
+const PREV = Symbol('prev')
 
 export class Row {
   constructor (entity, datastore) {
-    const _key = entity[datastore.KEY]
-    for (const k of Object.keys(entity).sort()) {
-      this[k] = entity[k]
-    }
-    Object.defineProperty(this, KEY, { value: _key, configurable: true })
+    Object.assign(this, clone(entity))
+    Object.defineProperties(this, {
+      [KEY]: { value: entity[datastore.KEY], configurable: true },
+      [PREV]: { value: clone(entity), configurable: true }
+    })
   }
 
   get _key () {
     return this[KEY]
+  }
+
+  _changed () {
+    // unwrap from class before comparing
+    return !equal({ ...this }, this[PREV])
   }
 }
 
@@ -91,13 +104,12 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
 })
 
 function makeEntities (arr, { kind, datastore }) {
-  return arrify(arr).map(row => {
-    if (row instanceof Row) return { key: row._key, data: { ...row } }
-    return {
-      key: row._id ? datastore.key([kind, row._id]) : datastore.key([kind]),
-      data: { ...row }
-    }
-  })
+  return arrify(arr)
+    .filter(row => !(row instanceof Row) || row._changed())
+    .map(row => ({
+      key: row instanceof Row ? row._key : datastore.key([kind]),
+      data: clone(row)
+    }))
 }
 
 function extractKeys (arr) {
