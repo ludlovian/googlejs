@@ -41,31 +41,33 @@ export class Table {
 
   async insert (rows) {
     const datastore = await getDatastoreAPI()
-    const entities = makeEntities(rows, { kind: this.kind, datastore })
-    if (!entities.length) return
-    await datastore.insert(entities)
+    const { kind } = this
+    for (const entities of getEntities(rows, { kind, datastore })) {
+      await datastore.insert(entities)
+    }
   }
 
   async update (rows) {
     const datastore = await getDatastoreAPI()
-    const entities = makeEntities(rows, { kind: this.kind, datastore })
-    if (!entities.length) return
-    console.log(entities)
-    await datastore.update(entities)
+    const { kind } = this
+    for (const entities of getEntities(rows, { kind, datastore })) {
+      await datastore.update(entities)
+    }
   }
 
   async upsert (rows) {
     const datastore = await getDatastoreAPI()
-    const entities = makeEntities(rows, { kind: this.kind, datastore })
-    if (!entities.length) return
-    await datastore.upsert(entities)
+    const { kind } = this
+    for (const entities of getEntities(rows, { kind, datastore })) {
+      await datastore.upsert(entities)
+    }
   }
 
   async delete (rows) {
     const datastore = await getDatastoreAPI()
-    const keys = extractKeys(rows)
-    if (!keys.length) return
-    await datastore.delete(keys)
+    for (const keys of getKeys(rows)) {
+      await datastore.delete(keys)
+    }
   }
 }
 
@@ -103,17 +105,35 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
   return datastore
 })
 
-function makeEntities (arr, { kind, datastore }) {
-  return arrify(arr)
-    .filter(row => !(row instanceof Row) || row._changed())
-    .map(row => ({
+function * getEntities (arr, { kind, datastore, group = 400 }) {
+  let batch = []
+  for (const row of arrify(arr)) {
+    if (row instanceof Row && !row._changed) continue
+    batch.push({
       key: row instanceof Row ? row._key : datastore.key([kind]),
       data: clone(row)
-    }))
+    })
+    if (batch.length === group) {
+      yield batch
+      batch = []
+    }
+  }
+  if (batch.length) {
+    yield batch
+  }
 }
 
-function extractKeys (arr) {
-  return arrify(arr)
-    .filter(row => row instanceof Row)
-    .map(row => row._key)
+function * getKeys (arr, { group = 400 } = {}) {
+  let batch = []
+  for (const row of arrify(arr)) {
+    if (!(row instanceof Row)) continue
+    batch.push(row._key)
+    if (batch.length === group) {
+      yield batch
+      batch = []
+    }
+  }
+  if (batch.length) {
+    yield batch
+  }
 }
