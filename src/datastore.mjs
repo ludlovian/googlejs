@@ -74,7 +74,7 @@ export class Table {
     const datastore = await getDatastoreAPI()
     for (const keys of getKeys(rows)) {
       await datastore.delete(keys)
-      debug('%d records deleted from %s', entities.length, this.kind)
+      debug('%d records deleted from %s', keys.length, this.kind)
     }
   }
 }
