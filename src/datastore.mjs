@@ -2,6 +2,9 @@ import once from 'pixutil/once'
 import arrify from 'pixutil/arrify'
 import clone from 'pixutil/clone'
 import equal from 'pixutil/equal'
+import log from 'logjs'
+
+const debug = log.prefix('googlejs:datastore').colour().level(5)
 
 export class Table {
   constructor (kind) {
@@ -36,6 +39,7 @@ export class Table {
     for await (const entity of this.fetch(options)) {
       entities.push(entity)
     }
+    debug('%d records loaded from %s', entities.length, this.kind)
     return entities
   }
 
@@ -44,6 +48,7 @@ export class Table {
     const { kind } = this
     for (const entities of getEntities(rows, { kind, datastore })) {
       await datastore.insert(entities)
+      debug('%d records inserted to %s', entities.length, this.kind)
     }
   }
 
@@ -52,6 +57,7 @@ export class Table {
     const { kind } = this
     for (const entities of getEntities(rows, { kind, datastore })) {
       await datastore.update(entities)
+      debug('%d records updated to %s', entities.length, this.kind)
     }
   }
 
@@ -60,6 +66,7 @@ export class Table {
     const { kind } = this
     for (const entities of getEntities(rows, { kind, datastore })) {
       await datastore.upsert(entities)
+      debug('%d records upserted to %s', entities.length, this.kind)
     }
   }
 
@@ -67,6 +74,7 @@ export class Table {
     const datastore = await getDatastoreAPI()
     for (const keys of getKeys(rows)) {
       await datastore.delete(keys)
+      debug('%d records deleted from %s', entities.length, this.kind)
     }
   }
 }
