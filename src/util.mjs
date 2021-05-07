@@ -13,3 +13,11 @@ export function toDate (serial) {
   const offset = tryDate.getTimezoneOffset() * 60 * 1000
   return new Date(ms + offset)
 }
+
+export function clean (obj) {
+  const ret = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) ret[k] = v
+  }
+  return ret
+}

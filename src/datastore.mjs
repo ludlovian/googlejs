@@ -4,7 +4,12 @@ import clone from 'pixutil/clone'
 import equal from 'pixutil/equal'
 import log from 'logjs'
 
-const debug = log.prefix('googlejs:datastore:').colour().level(5)
+import { clean } from './util.mjs'
+
+const debug = log
+  .prefix('googlejs:datastore:')
+  .colour()
+  .level(5)
 
 export class Table {
   constructor (kind) {
@@ -96,8 +101,8 @@ export class Row {
   }
 
   _changed () {
-    // unwrap from class before comparing
-    return !equal({ ...this }, this[PREV])
+    // unwrap from class and clean before comparing
+    return !equal(clean(this), this[PREV])
   }
 }
 
