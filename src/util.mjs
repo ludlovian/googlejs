@@ -16,7 +16,8 @@ export function toDate (serial) {
 
 export function clean (obj) {
   const ret = {}
-  for (const [k, v] of Object.entries(obj)) {
+  for (const k of Object.keys(obj).sort()) {
+    const v = obj[k]
     if (v !== undefined) ret[k] = v
   }
   return ret

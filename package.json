@@ -10,7 +10,8 @@
     ".": "./src/index.mjs",
     "./drive": "./src/drive.mjs",
     "./sheets": "./src/sheets.mjs",
-    "./datastore": "./src/datastore.mjs"
+    "./datastore": "./src/datastore.mjs",
+    "./table": "./src/table.mjs"
   },
   "scripts": {
     "format": "prettier-standard src/*.mjs",
@@ -32,6 +33,7 @@
     "@googleapis/drive": "^0.3.0",
     "@googleapis/sheets": "^0.3.0",
     "logjs": "github:ludlovian/logjs#semver:^1.2.0",
-    "pixutil": "github:ludlovian/pixutil#semver:^1.0.0"
+    "pixutil": "github:ludlovian/pixutil#semver:^1.0.0",
+    "teme": "github:ludlovian/teme"
   }
 }

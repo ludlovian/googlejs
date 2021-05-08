@@ -1,7 +1,7 @@
 import once from 'pixutil/once'
 import arrify from 'pixutil/arrify'
 import clone from 'pixutil/clone'
-import equal from 'pixutil/equal'
+import batch from 'teme/batch'
 import log from 'logjs'
 
 import { clean } from './util.mjs'
@@ -85,24 +85,17 @@ export class Table {
 }
 
 const KEY = Symbol('rowKey')
-const PREV = Symbol('prev')
 
 export class Row {
   constructor (entity, datastore) {
-    Object.assign(this, clone(entity))
+    Object.assign(this, clone(clean(entity)))
     Object.defineProperties(this, {
-      [KEY]: { value: entity[datastore.KEY], configurable: true },
-      [PREV]: { value: clone(entity), configurable: true }
+      [KEY]: { value: entity[datastore.KEY], configurable: true }
     })
   }
 
   get _key () {
     return this[KEY]
-  }
-
-  _changed () {
-    // unwrap from class and clean before comparing
-    return !equal(clean(this), this[PREV])
   }
 }
 
@@ -119,34 +112,18 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
 })
 
 function * getEntities (arr, { kind, datastore, group = 400 }) {
-  let batch = []
-  for (const row of arrify(arr)) {
-    if (row instanceof Row && !row._changed()) continue
-    batch.push({
-      key: row instanceof Row ? row._key : datastore.key([kind]),
-      data: clone(row)
-    })
-    if (batch.length === group) {
-      yield batch
-      batch = []
-    }
-  }
-  if (batch.length) {
-    yield batch
-  }
+  const entities = arrify(arr).map(row => ({
+    key: row._key || datastore.key([kind]),
+    data: clone(row)
+  }))
+
+  yield * batch(group)(entities)
 }
 
 function * getKeys (arr, { group = 400 } = {}) {
-  let batch = []
-  for (const row of arrify(arr)) {
-    if (!(row instanceof Row)) continue
-    batch.push(row._key)
-    if (batch.length === group) {
-      yield batch
-      batch = []
-    }
-  }
-  if (batch.length) {
-    yield batch
-  }
+  const keys = arrify(arr)
+    .filter(row => row instanceof Row)
+    .map(row => row._key)
+
+  yield * batch(group)(keys)
 }
