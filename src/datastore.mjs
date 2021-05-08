@@ -2,6 +2,7 @@ import once from 'pixutil/once'
 import arrify from 'pixutil/arrify'
 import clone from 'pixutil/clone'
 import batch from 'teme/batch'
+import equal from 'pixutil/equal'
 import log from 'logjs'
 
 import { clean } from './util.mjs'
@@ -85,17 +86,24 @@ export class Table {
 }
 
 const KEY = Symbol('rowKey')
+const PREV = Symbol('prev')
 
 export class Row {
   constructor (entity, datastore) {
     Object.assign(this, clone(clean(entity)))
     Object.defineProperties(this, {
-      [KEY]: { value: entity[datastore.KEY], configurable: true }
+      [KEY]: { value: entity[datastore.KEY], configurable: true },
+      [PREV]: { value: clone(entity), configurable: true }
     })
   }
 
   get _key () {
     return this[KEY]
+  }
+
+  _changed () {
+    // unwrap from class and clean before comparing
+    return !equal(clean(this), this[PREV])
   }
 }
 
@@ -112,10 +120,12 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
 })
 
 function * getEntities (arr, { kind, datastore, group = 400 }) {
-  const entities = arrify(arr).map(row => ({
-    key: row._key || datastore.key([kind]),
-    data: clone(row)
-  }))
+  const entities = arrify(arr)
+    .filter(row => !(row instanceof Row) || row._changed())
+    .map(row => ({
+      key: row._key || datastore.key([kind]),
+      data: clone(row)
+    }))
 
   yield * batch(group)(entities)
 }
