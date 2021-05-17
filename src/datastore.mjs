@@ -1,7 +1,7 @@
 import once from 'pixutil/once'
 import arrify from 'pixutil/arrify'
 import clone from 'pixutil/clone'
-import batch from 'teme/batch'
+import teme from 'teme'
 import equal from 'pixutil/equal'
 import log from 'logjs'
 
@@ -41,10 +41,7 @@ export class Table {
   }
 
   async select (options) {
-    const entities = []
-    for await (const entity of this.fetch(options)) {
-      entities.push(entity)
-    }
+    const entities = await teme(this.fetch(options)).collect()
     debug('%d records loaded from %s', entities.length, this.kind)
     return entities
   }
@@ -119,21 +116,21 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
   return datastore
 })
 
-function * getEntities (arr, { kind, datastore, group = 400 }) {
-  const entities = arrify(arr)
+function getEntities (arr, { kind, datastore, size = 400 }) {
+  return teme(arrify(arr))
     .filter(row => !(row instanceof Row) || row._changed())
     .map(row => ({
       key: row._key || datastore.key([kind]),
       data: clone(row)
     }))
-
-  yield * batch(group)(entities)
+    .batch()
+    .map(group => group.collect())
 }
 
-function * getKeys (arr, { group = 400 } = {}) {
-  const keys = arrify(arr)
+function getKeys (arr, { size = 400 } = {}) {
+  return teme(arrify(arr))
     .filter(row => row instanceof Row)
     .map(row => row._key)
-
-  yield * batch(group)(keys)
+    .batch(group)
+    .map(group => group.collect())
 }

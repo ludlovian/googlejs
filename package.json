@@ -34,6 +34,6 @@
     "@googleapis/sheets": "^0.3.0",
     "logjs": "github:ludlovian/logjs#semver:^1.2.0",
     "pixutil": "github:ludlovian/pixutil#semver:^1.0.0",
-    "teme": "github:ludlovian/teme"
+    "teme": "github:ludlovian/teme#semver:^2.1.0"
   }
 }
