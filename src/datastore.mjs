@@ -123,7 +123,7 @@ function getEntities (arr, { kind, datastore, size = 400 }) {
       key: row._key || datastore.key([kind]),
       data: clone(row)
     }))
-    .batch()
+    .batch(size)
     .map(group => group.collect())
 }
 
