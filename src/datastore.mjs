@@ -131,6 +131,6 @@ function getKeys (arr, { size = 400 } = {}) {
   return teme(arrify(arr))
     .filter(row => row instanceof Row)
     .map(row => row._key)
-    .batch(group)
+    .batch(size)
     .map(group => group.collect())
 }
