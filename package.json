@@ -1,6 +1,6 @@
 {
   "name": "googlejs",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "My API to google stuff",
   "main": "src/index.mjs",
   "module": "src/index.mjs",
