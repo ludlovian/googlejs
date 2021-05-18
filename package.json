@@ -11,7 +11,8 @@
     "./drive": "./src/drive.mjs",
     "./sheets": "./src/sheets.mjs",
     "./datastore": "./src/datastore.mjs",
-    "./table": "./src/table.mjs"
+    "./table": "./src/table.mjs",
+    "./storage": "./src/storage.mjs"
   },
   "scripts": {
     "format": "prettier-standard src/*.mjs",
@@ -30,10 +31,16 @@
   "homepage": "https://github.com/ludlovian/googlejs#readme",
   "dependencies": {
     "@google-cloud/datastore": "^6.3.1",
+    "@google-cloud/storage": "^5.8.5",
     "@googleapis/drive": "^0.3.0",
     "@googleapis/sheets": "^0.3.0",
+    "hash-stream": "github:ludlovian/hash-stream",
     "logjs": "github:ludlovian/logjs#semver:^1.2.0",
+    "mime": "^2.5.2",
     "pixutil": "github:ludlovian/pixutil#semver:^1.0.0",
-    "teme": "github:ludlovian/teme#semver:^2.1.0"
+    "progress-stream": "github:ludlovian/progress-stream",
+    "speedo": "github:ludlovian/speedo",
+    "teme": "github:ludlovian/teme#semver:^2.1.0",
+    "throttler": "github:ludlovian/throttler"
   }
 }
