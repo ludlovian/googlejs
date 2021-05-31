@@ -141,11 +141,7 @@ function packMetadata (obj, key = 'gsjs') {
 
 function unpackMetadata (md, key = 'gsjs') {
   if (!md || !md[key]) return {}
-  return md[key].split('/').reduce((o, item) => {
-    const [k, v] = item.split(':')
-    o[k] = v
-    return o
-  }, {})
+  return Object.fromValues(md[key].split('/').map(x => x.split(':')))
 }
 
 function cleanMetadata (obj) {
