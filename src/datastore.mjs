@@ -107,7 +107,7 @@ export class Row {
     return !equal(clean(this.asJSON()), this[PREV])
   }
 
-  _key () {
+  get _key () {
     return this[KEY]
   }
 }
@@ -126,7 +126,7 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
 
 function getEntities (arr, { kind, datastore, size = 400 }) {
   return teme(arrify(arr))
-    .map(row => (row instanceof Row ? row : new Row(row)))
+    .map(row => (row instanceof Row) ? row : new Row(row))
     .filter(row => row._changed())
     .map(row => ({
       key: row._key || datastore.key([kind]),
