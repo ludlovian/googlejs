@@ -34,9 +34,8 @@ export class Table {
         query = query.order(...arrify(args))
       }
     }
-    const Factory = factory || Row
     for await (const entity of query.runStream()) {
-      yield new Factory(entity, datastore)
+      yield Row.fromEntity(entity, datastore, factory)
     }
   }
 
@@ -86,21 +85,29 @@ const KEY = Symbol('rowKey')
 const PREV = Symbol('prev')
 
 export class Row {
-  constructor (entity, datastore) {
-    Object.assign(this, clone(clean(entity)))
-    Object.defineProperties(this, {
+  static fromEntity (entity, datastore, Factory) {
+    const data = clone(entity)
+    const row = new (Factory || Row)(data)
+    Object.defineProperties(row, {
       [KEY]: { value: entity[datastore.KEY], configurable: true },
-      [PREV]: { value: clone(entity), configurable: true }
+      [PREV]: { value: clone(data), configurable: true }
     })
   }
 
-  get _key () {
-    return this[KEY]
+  constructor (data) {
+    Object.assign(this, data)
+  }
+
+  asJSON () {
+    return { ...this }
   }
 
   _changed () {
-    // unwrap from class and clean before comparing
-    return !equal(clean(this), this[PREV])
+    return !equal(clean(this.asJSON()), this[PREV])
+  }
+
+  _key () {
+    return this[KEY]
   }
 }
 
@@ -118,10 +125,11 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
 
 function getEntities (arr, { kind, datastore, size = 400 }) {
   return teme(arrify(arr))
-    .filter(row => !(row instanceof Row) || row._changed())
+    .map(row => (row instanceof Row ? row : new Row(row)))
+    .filter(row => row._changed())
     .map(row => ({
       key: row._key || datastore.key([kind]),
-      data: clone(row)
+      data: clean(row.asJSON())
     }))
     .batch(size)
     .map(group => group.collect())
@@ -129,7 +137,7 @@ function getEntities (arr, { kind, datastore, size = 400 }) {
 
 function getKeys (arr, { size = 400 } = {}) {
   return teme(arrify(arr))
-    .filter(row => row instanceof Row)
+    .filter(row => row instanceof Row && row._key)
     .map(row => row._key)
     .batch(size)
     .map(group => group.collect())
