@@ -92,6 +92,7 @@ export class Row {
       [KEY]: { value: entity[datastore.KEY], configurable: true },
       [PREV]: { value: clone(data), configurable: true }
     })
+    return row
   }
 
   constructor (data) {
