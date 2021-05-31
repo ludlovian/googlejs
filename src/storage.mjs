@@ -141,30 +141,30 @@ function packMetadata (obj, key = 'gsjs') {
 
 function unpackMetadata (md, key = 'gsjs') {
   if (!md || !md[key]) return {}
-  return Object.fromValues(md[key].split('/').map(x => x.split(':')))
+  return Object.fromEntries(md[key].split('/').map(x => x.split(':')))
 }
 
 function cleanMetadata (obj) {
-  const integerRegex = /^-?\d+$/
-  const floatRegex = /^-?\d+\.\d+$/
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [k, guessType(v, k)])
+  )
+}
+
+function guessType (x, key) {
   const dateRegex = /^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/
   const knownTimes = new Set(['atime', 'mtime', 'ctime'])
-  for (const k of Object.keys(obj)) {
-    let v = obj[k]
-    if (typeof v !== 'string') continue
-    if (integerRegex.test(v)) {
-      v = parseInt(v, 10)
-    } else if (floatRegex.test(v)) {
-      v = parseFloat(v)
-    } else if (dateRegex.test(v)) {
-      v = new Date(v)
-    }
-    if (knownTimes.has(k)) {
-      v = new Date(v)
-    }
-    obj[k] = v
-  }
-  return obj
+
+  if (typeof x !== 'string') return x
+  if (knownTimes.has(key)) return new Date(parseFloat(x))
+  if (dateRegex.test(x)) return new Date(x)
+
+  const i = parseInt(x)
+  if (i.toString() === x && Number.isSafeInteger()) return i
+
+  const f = parseFloat(x)
+  if (f.toString() === x) return f
+
+  return x
 }
 
 const getStorageAPI = once(async function getStorageAPI ({
