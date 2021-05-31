@@ -95,7 +95,7 @@ export class Row {
   }
 
   constructor (data) {
-    Object.assign(this, data)
+    Object.assign(this, clean(data))
   }
 
   asJSON () {
