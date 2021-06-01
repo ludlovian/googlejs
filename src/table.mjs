@@ -1,4 +1,4 @@
-import { Table } from './datastore.mjs'
+import { Table, Row } from './datastore.mjs'
 
 export class IndexedTable extends Table {
   constructor (name) {
@@ -34,7 +34,8 @@ export class IndexedTable extends Table {
       this._changed.add(row)
       return row
     } else {
-      const row = { ...data }
+      const Factory = this.factory || Row
+      const row = Object.assign(new Factory({}), data)
       for (const k in this.ix) this.ix[k].add(row)
       this._changed.add(row)
       return row
