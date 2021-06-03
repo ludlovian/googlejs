@@ -1,9 +1,9 @@
 import once from 'pixutil/once'
 import arrify from 'pixutil/arrify'
 import clone from 'pixutil/clone'
-import teme from 'teme'
 import equal from 'pixutil/equal'
 import log from 'logjs'
+import teme from 'teme'
 
 import { clean } from './util.mjs'
 
@@ -12,15 +12,15 @@ const debug = log
   .colour()
   .level(5)
 
+const PREV = Symbol('prev')
+const KEY = Symbol('key')
+
 export class Table {
   constructor (kind) {
     this.kind = kind
   }
 
   async * fetch ({ where, order, factory, ...rest } = {}) {
-    if (factory && !(factory.prototype instanceof Row)) {
-      throw new Error('Factory for new rows must subclass Row')
-    }
     const datastore = await getDatastoreAPI(rest)
     let query = datastore.createQuery(this.kind)
     if (where && typeof where === 'object') {
@@ -35,7 +35,7 @@ export class Table {
       }
     }
     for await (const entity of query.runStream()) {
-      yield Row.fromEntity(entity, datastore, factory)
+      yield createRowfromEntity(entity, datastore, factory)
     }
   }
 
@@ -43,24 +43,6 @@ export class Table {
     const entities = await teme(this.fetch(options)).collect()
     debug('%d records loaded from %s', entities.length, this.kind)
     return entities
-  }
-
-  async insert (rows) {
-    const datastore = await getDatastoreAPI()
-    const { kind } = this
-    for (const entities of getEntities(rows, { kind, datastore })) {
-      await datastore.insert(entities)
-      debug('%d records inserted to %s', entities.length, this.kind)
-    }
-  }
-
-  async update (rows) {
-    const datastore = await getDatastoreAPI()
-    const { kind } = this
-    for (const entities of getEntities(rows, { kind, datastore })) {
-      await datastore.update(entities)
-      debug('%d records updated to %s', entities.length, this.kind)
-    }
   }
 
   async upsert (rows) {
@@ -81,35 +63,50 @@ export class Table {
   }
 }
 
-const KEY = Symbol('rowKey')
-const PREV = Symbol('prev')
+Table.getKey = o => o[KEY]
+Table.getPrev = o => o[PREV]
 
-export class Row {
-  static fromEntity (entity, datastore, Factory) {
-    const data = clone(entity)
-    const row = new (Factory || Row)(data)
-    Object.defineProperties(row, {
-      [KEY]: { value: entity[datastore.KEY], configurable: true },
-      [PREV]: { value: clone(data), configurable: true }
-    })
-    return row
-  }
+function createRowfromEntity (entity, datastore, factory) {
+  const Factory = factory || Object
+  const row = new Factory()
+  setPrivate(row, { key: entity[datastore.KEY], prev: clone(entity) })
+  if (row.deserialize) row.deserialize(clone(entity))
+  else Object.assign(row, clone(entity))
+  return row
+}
 
-  constructor (data) {
-    Object.assign(this, clean(data))
+function * getEntities (arr, { kind, datastore, size = 400 }) {
+  const batch = []
+  for (const row of arrify(arr)) {
+    const data = row.serialize ? row.serialize() : clean(row)
+    if (row[PREV] && equal(row[PREV], data)) continue
+    if (!row[KEY]) setPrivate(row, { key: datastore.key([kind]) })
+    const entity = { key: row[KEY], data }
+    setPrivate(row, { prev: clone(data) })
+    if (batch.push(entity) >= size) yield batch.splice(0)
   }
+  if (batch.length) yield batch
+}
 
-  asJSON () {
-    return { ...this }
+function * getKeys (arr, { size = 400 } = {}) {
+  const batch = []
+  for (const row of arrify(arr)) {
+    if (!row[KEY]) continue
+    if (batch.push(row[KEY]) >= size) yield batch.splice(0)
+    setPrivate(row, { key: undefined, prev: undefined })
   }
+  if (batch.length) yield batch
+}
 
-  _changed () {
-    return !equal(clean(this.asJSON()), this[PREV])
+function setPrivate (row, data) {
+  const defs = {}
+  if ('prev' in data) {
+    defs[PREV] = { value: data.prev, configurable: true }
   }
-
-  get _key () {
-    return this[KEY]
+  if ('key' in data) {
+    defs[KEY] = { value: data.key, configurable: true }
   }
+  return Object.defineProperties(row, defs)
 }
 
 const getDatastoreAPI = once(async function getDatastoreAPI ({
@@ -123,23 +120,3 @@ const getDatastoreAPI = once(async function getDatastoreAPI ({
   const datastore = new Datastore()
   return datastore
 })
-
-function getEntities (arr, { kind, datastore, size = 400 }) {
-  return teme(arrify(arr))
-    .map(row => (row instanceof Row ? row : new Row(row)))
-    .filter(row => row._changed())
-    .map(row => ({
-      key: row._key || datastore.key([kind]),
-      data: clean(row.asJSON())
-    }))
-    .batch(size)
-    .map(group => group.collect())
-}
-
-function getKeys (arr, { size = 400 } = {}) {
-  return teme(arrify(arr))
-    .filter(row => row instanceof Row && row._key)
-    .map(row => row._key)
-    .batch(size)
-    .map(group => group.collect())
-}
