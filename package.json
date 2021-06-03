@@ -11,7 +11,6 @@
     "./drive": "./src/drive.mjs",
     "./sheets": "./src/sheets.mjs",
     "./datastore": "./src/datastore.mjs",
-    "./table": "./src/table.mjs",
     "./storage": "./src/storage.mjs"
   },
   "scripts": {
