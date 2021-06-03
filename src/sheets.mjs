@@ -1,6 +1,6 @@
 import once from 'pixutil/once'
 
-import { toDate, toSerial } from './util.mjs'
+import SerialDate from './serial-date.mjs'
 
 const SCOPES = {
   rw: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -8,7 +8,9 @@ const SCOPES = {
 }
 
 export const scopes = SCOPES
-export { toDate, toSerial }
+export const toDate = s => SerialDate.fromSerial(s).localDate()
+export const toSerial = d => SerialDate.fromLocalDate(d).serial
+export { SerialDate }
 
 export async function getRange ({ sheet, range, ...options }) {
   const sheets = await getSheetAPI(options)
