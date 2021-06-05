@@ -1,31 +1,30 @@
 const epochStartInSerial = 25569
 const msInDay = 24 * 60 * 60 * 1000
+const msInMinute = 60 * 1000
 
 export default class SerialDate {
   static fromSerial (n) {
     return new SerialDate(n)
   }
 
+  static fromUTCms (ms) {
+    return SerialDate.fromSerial(ms / msInDay + epochStartInSerial)
+  }
+
   static fromUTCDate (d) {
-    return new SerialDate(d.getTime() / msInDay + epochStartInSerial)
+    return SerialDate.fromUTCms(d.getTime())
   }
 
   static fromParts (parts) {
     parts = [...parts, 0, 0, 0, 0, 0, 0, 0].slice(0, 7)
     parts[1]--
-    return SerialDate.fromUTCDate(new Date(Date.UTC(...parts)))
+    return SerialDate.fromUTCms(Date.UTC(...parts))
   }
 
   static fromLocalDate (d) {
-    return SerialDate.fromParts([
-      d.getFullYear(),
-      d.getMonth() + 1,
-      d.getDate(),
-      d.getHours(),
-      d.getMinutes(),
-      d.getSeconds(),
-      d.getMilliseconds()
-    ])
+    return SerialDate.fromUTCms(
+      d.getTime() - d.getTimezoneOffset() * msInMinute
+    )
   }
 
   constructor (serial) {
@@ -33,8 +32,12 @@ export default class SerialDate {
     Object.freeze(this)
   }
 
+  utcMs () {
+    return Math.round((this.serial - epochStartInSerial) * msInDay)
+  }
+
   utcDate () {
-    return new Date((this.serial - epochStartInSerial) * msInDay)
+    return new Date(this.utcMs())
   }
 
   parts () {
