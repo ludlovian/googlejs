@@ -15,16 +15,16 @@ export { SerialDate }
 export async function getRange ({ sheet, range, ...options }) {
   const sheets = await getSheetAPI(options)
 
-  const query = {
+  const response = await sheets.spreadsheets.values.get({
     spreadsheetId: sheet,
     range,
-    valueRenderOption: 'UNFORMATTED_VALUE'
-  }
-
-  const response = await sheets.spreadsheets.values.get(query)
+    valueRenderOption: 'UNFORMATTED_VALUE',
+    dateTimeRenderOption: 'SERIAL_NUMBER',
+    majorDimension: 'ROWS'
+  })
 
   if (response.status !== 200) {
-    throw Object.assign(Error('Failed to read sheet'), { response })
+    throw Object.assign(new Error('Failed to read sheet'), { response })
   }
   return response.data.values
 }
@@ -36,21 +36,40 @@ export async function updateRange ({ sheet, range, data, ...options }) {
     row.map(val => (val instanceof Date ? toSerial(val) : val))
   )
 
-  const query = {
+  const response = await sheets.spreadsheets.values.update({
     spreadsheetId: sheet,
     range,
     valueInputOption: 'RAW',
-    resource: {
+    requestBody: {
       range,
       majorDimension: 'ROWS',
       values: data
     }
-  }
-  const response = await sheets.spreadsheets.values.update(query)
+  })
 
   if (response.status !== 200) {
-    throw Object.assign(Error('Failed to update sheet'), { response })
+    throw Object.assign(new Error('Failed to update sheet'), { response })
   }
+}
+
+export function getColumn (col) {
+  // Convert a column number (1, 2, ..., 26, 27, ...)
+  // into a column name (A, B, ..., Z, AA, ...)
+  //
+  let colName = ''
+  while (col > 0) {
+    const rem = col % 26
+    let char
+    if (rem === 0) {
+      char = 'Z'
+      col = (col / 26) - 1
+    } else {
+      char = String.fromCharCode(64 + rem)
+      col = Math.floor(col / 26)
+    }
+    colName = char + colName
+  }
+  return colName
 }
 
 const getSheetAPI = once(async function getSheetAPI ({
