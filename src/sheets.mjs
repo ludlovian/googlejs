@@ -56,20 +56,14 @@ export function getColumn (col) {
   // Convert a column number (1, 2, ..., 26, 27, ...)
   // into a column name (A, B, ..., Z, AA, ...)
   //
-  let colName = ''
-  while (col > 0) {
-    const rem = col % 26
-    let char
-    if (rem === 0) {
-      char = 'Z'
-      col = (col / 26) - 1
-    } else {
-      char = String.fromCharCode(64 + rem)
-      col = Math.floor(col / 26)
-    }
-    colName = char + colName
+  // inspired by bb26
+  //
+  const toChar = n => String.fromCharCode(64 + n)
+  let s = ''
+  for (let n = col; n > 0; n = Math.floor(--n / 26)) {
+    s = toChar(n % 26 || 26) + s
   }
-  return colName
+  return s
 }
 
 const getSheetAPI = once(async function getSheetAPI ({
